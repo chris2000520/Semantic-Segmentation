@@ -1,1 +1,9 @@
 .idea/
+database/*
+!database/.gitkeep
+
+results/*
+!results/.gitkeep
+
+run/*
+!run/.gitkeep
