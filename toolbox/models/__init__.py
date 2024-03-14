@@ -5,8 +5,8 @@ from toolbox.models.enet import ENet
 from toolbox.models.deeplabv3plus import DeepLabv3_plus
 from toolbox.models.bisenet import BiSeNet
 
-def get_model(cfg):
 
+def get_model(cfg):
     return {
         'unet': unet,
         'segnet': segnet,

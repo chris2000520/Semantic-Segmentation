@@ -10,7 +10,7 @@
 
     "loss": "crossentropyloss2D",
 
-    "epoch": 120,
+    "epoch": 20,
 
     "lr": 1e-4,
     "lr_decay_steps": 40,

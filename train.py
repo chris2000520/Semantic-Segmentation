@@ -86,19 +86,17 @@ def run(cfg, logger):
         metrics = running_metrics_val.get_scores()
         for k, v in metrics[0].items():
             print(k, v)
-        train_miou = metrics[0]['mIou: ']
-        train_acc = metrics[0]['pixel_acc: ']
-        train_class_acc = metrics[0]['class_acc: ']
+        train_miou = metrics[0]['MIoU: ']
+        train_acc = metrics[0]['PA: ']
+        train_class_acc = metrics[0]['MPA: ']
 
         if max(best) <= train_miou:
             best.append(train_miou)
             torch.save(model.state_dict(), os.path.join(cfg['logdir'], 'best_train_miou.pth'))
 
-        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Train loss={train_loss / len(train_loader):.5f}')
-        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train Acc={train_acc / len(train_loader):.5f}')
-        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train Mean IU={train_miou / len(train_loader):.5f}')
-        # logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train_class_acc={list(train_class_acc / len(
-        # train_loader))}')
+        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Train loss={train_loss :.5f}')
+        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train acc={train_acc :.5f}')
+        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train miou={train_miou :.5f}')
 
         net = model.eval()
         eval_loss = 0
@@ -119,20 +117,18 @@ def run(cfg, logger):
         print('------------------eval------------------')
         for k, v in metrics[0].items():
             print(k, v)
-        eval_miou = metrics[0]['mIou: ']
-        eval_acc = metrics[0]['pixel_acc: ']
-        eval_class_acc = metrics[0]['class_acc: ']
+        eval_miou = metrics[0]['MIoU: ']
+        eval_acc = metrics[0]['PA: ']
 
-        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] valid loss={eval_loss / len(val_loader):.5f}')
-        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid Acc={eval_acc / len(val_loader):.5f}')
-        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid Mean IU={eval_miou / len(val_loader):.5f}')
-        # logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid Class Acc={list(eval_class_acc / len(val_loader))}')
-
+        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Valid loss={eval_loss :.5f}')
+        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid acc={eval_acc :.5f}')
+        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid miou={eval_miou :.5f}')
 
 
 if __name__ == '__main__':
     import argparse
 
+    # 固定的代码
     parser = argparse.ArgumentParser(description="config")
     parser.add_argument(
         "--config",
@@ -144,6 +140,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # 用args调用config
     with open(args.config, 'r') as fp:
         cfg = json.load(fp)
 
@@ -151,7 +148,7 @@ if __name__ == '__main__':
     logdir = f'run/{cfg["dataset"]}/{time.strftime("%Y-%m-%d-%H-%M")}-{random.randint(1000, 10000)}'
     os.makedirs(logdir)
     shutil.copy(args.config, logdir)
-
+    # 初始化日志
     logger = get_logger(logdir)
 
     logger.info(f'Conf | use logdir {logdir}')

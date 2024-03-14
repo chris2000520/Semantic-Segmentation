@@ -104,7 +104,7 @@ class FeatureFusionModule(torch.nn.Module):
 
 
 class BiSeNet(torch.nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, n_classes):
         super().__init__()
         self.saptial_path = Spatial_path()
         self.context_path = resnet18()
@@ -113,12 +113,12 @@ class BiSeNet(torch.nn.Module):
         self.attention_refinement_module2 = AttentionRefinementModule(512, 512)
 
         # 多尺度监督，尽在训练阶段有
-        self.supervision1 = nn.Conv2d(in_channels=256, out_channels=num_classes, kernel_size=1)
-        self.supervision2 = nn.Conv2d(in_channels=512, out_channels=num_classes, kernel_size=1)
+        self.supervision1 = nn.Conv2d(in_channels=256, out_channels=n_classes, kernel_size=1)
+        self.supervision2 = nn.Conv2d(in_channels=512, out_channels=n_classes, kernel_size=1)
 
-        self.feature_fusion_module = FeatureFusionModule(num_classes, 1024)
+        self.feature_fusion_module = FeatureFusionModule(n_classes, 1024)
 
-        self.conv = nn.Conv2d(in_channels=num_classes, out_channels=num_classes, kernel_size=1)
+        self.conv = nn.Conv2d(in_channels=n_classes, out_channels=n_classes, kernel_size=1)
 
     def forward(self, input):
         sp = self.saptial_path(input)
@@ -144,8 +144,8 @@ class BiSeNet(torch.nn.Module):
 
         result = self.conv(result)
 
-        if self.training == True:
-            return result, cx1_sup, cx2_sup
+        # if self.training == True:
+        #     return result, cx1_sup, cx2_sup
 
         return result
 
@@ -159,4 +159,4 @@ if __name__ == '__main__':
 
     out = net(rgb)
 
-    print(out.shape)
+    print(out)

@@ -56,7 +56,7 @@ def predict(cfg, runid, use_pth='best_train_miou.pth'):
         pre_label = out.max(1)[1].squeeze().cpu().data.numpy()
         pre = cm[pre_label]
         pre1 = Image.fromarray(pre)
-        pre1.save(test_logdir + '/' + str(i) + '.png')
+        # pre1.save(test_logdir + '/' + str(i) + '.png')
 
         pre_label = out.max(dim=1)[1].data.cpu().numpy()
         true_label = valLabel.data.cpu().numpy()
@@ -66,12 +66,12 @@ def predict(cfg, runid, use_pth='best_train_miou.pth'):
     metrics = running_metrics_val.get_scores()
     for k, v in metrics[0].items():
         print(k, v)
-    test_miou = metrics[0]['mIou: ']
-    test_acc = metrics[0]['pixel_acc: ']
-    test_class_acc = metrics[0]['class_acc: ']
+    test_miou = metrics[0]['MIoU: ']
+    test_acc = metrics[0]['PA: ']
+    # test_class_acc = metrics[0]['class_acc: ']
 
-    logger.info(f'Test | Test Acc={test_acc / (len(test_loader)):.5f}')
-    logger.info(f'Test | Test Mean IU={test_miou / (len(test_loader)):.5f}')
+    logger.info(f'Test | Test Acc={test_acc :.5f}')
+    logger.info(f'Test | Test MIoU={test_miou :.5f}')
     # logger.info(f'Test | Test_class_acc={list(test_class_acc / (len(test_loader)))}')
 
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         "--config",
         nargs="?",
         type=str,
-        default="configs/camvid_linknet.json",
+        default="configs/camvid_bisenet.json",
         help="Configuration file to use",
     )
 
@@ -93,6 +93,6 @@ if __name__ == '__main__':
     with open(args.config, 'r') as fp:
         cfg = json.load(fp)
 
-    args.id = '2024-03-12-14-22-7800'
+    args.id = '2024-03-14-20-39-2351'
 
     predict(cfg, args.id)

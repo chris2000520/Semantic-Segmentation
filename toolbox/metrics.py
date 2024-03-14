@@ -22,6 +22,7 @@ class runningScore(object):
                 raise ValueError("'ignore_index' must be an int or iterable")
 
     def _fast_hist(self, label_true, label_pred, n_class):
+        # mask是HxW的True和False数列
         mask = (label_true >= 0) & (label_true < n_class)
         hist = np.bincount(
             n_class * label_true[mask].astype(int) + label_pred[mask], minlength=n_class ** 2
@@ -48,13 +49,21 @@ class runningScore(object):
                 hist = np.delete(hist, index, axis=0)
                 hist = np.delete(hist, index, axis=1)
 
-        acc = np.diag(hist).sum() / hist.sum()
+        # Pixel Accuracy (PA像素精度，所有像素中，被正确分类的像素)
+        pa = np.diag(hist).sum() / hist.sum()
+
+        # Class Pixel Accuray(CPA类别像素准确率，每个类的真实像素中，被正确分类的像素)
         acc_cls = np.diag(hist) / hist.sum(axis=1)
-        acc_cls = np.nanmean(acc_cls)
+
+        # Mean Class Pixel Accuracy (MPA平均类像素精度, CPA求均值)
+        mpa = np.nanmean(acc_cls)
+
         iu = np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) - np.diag(hist))
+        # Mean Intersection over Union  (MIoU，均交并比，IoU求均值)
+
         mean_iou = np.nanmean(iu)
-        freq = hist.sum(axis=1) / hist.sum()
-        fw_iou = (freq[freq > 0] * iu[freq > 0]).sum()
+        # freq = hist.sum(axis=1) / hist.sum()
+        # fw_iou = (freq[freq > 0] * iu[freq > 0]).sum()
 
         # set unlabel as nan
         if self.ignore_index is not None:
@@ -65,10 +74,9 @@ class runningScore(object):
 
         return (
             {
-                "pixel_acc: ": acc,
-                "class_acc: ": acc_cls,
-                "mIou: ": mean_iou,
-                "fwIou: ": fw_iou,
+                "PA: ": pa,
+                "MPA: ": mpa,
+                "MIoU: ": mean_iou
             },
             cls_iu,
         )
