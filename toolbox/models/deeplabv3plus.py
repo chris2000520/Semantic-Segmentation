@@ -251,6 +251,7 @@ class ASPP_module(nn.Module):
         x3 = self.aspp3(x)
         x4 = self.aspp4(x)
         x5 = self.global_avg_pool(x)
+        # 将x5张量的尺寸插值为与x4相同的高度和宽度，[2:]表示从索引为2开始（包括2）（长宽），直到该维度的最后一个索引结束的切片操作
         x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
 
         x = torch.cat((x1, x2, x3, x4, x5), dim=1)

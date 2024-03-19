@@ -9,7 +9,7 @@
     "use_pt_norm": "True",
 
 
-    "loss": "crossentropyloss2D",
+    "loss": "crossentropy_loss",
 
     "epoch": 120,
 

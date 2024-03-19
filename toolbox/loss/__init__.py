@@ -1,20 +1,13 @@
 import torch.nn as nn
+from toolbox.loss.loss import DiceLoss
 
 
 def get_loss(cfg, weight=None):
 
-    '''
-
-        :param cfg:
-        :param weight: class weighting
-        :param ignore_index: class to ignore, 一般为背景id
-        :return:
-    '''
-
-    assert cfg['loss'] in ['crossentropyloss2D']
-    assert len(weight) == cfg['n_classes']
+   # 选择损失函数
+    
 
     return {
-        'crossentropyloss2D': nn.CrossEntropyLoss(weight=weight),
+        'crossentropy_loss': nn.CrossEntropyLoss(weight=weight),
 
     }[cfg['loss']]

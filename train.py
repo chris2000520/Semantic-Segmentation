@@ -49,7 +49,7 @@ def run(cfg, logger):
 
     # 损失函数 & 类别权重平衡
     logger.info(f'Conf | use loss function {cfg["loss"]}')
-    criterion = get_loss(cfg, weight=trainset.class_weight).to(cfg['device'])
+    criterion = get_loss(cfg).to(cfg['device'])
 
     # 训练 & 验证
     logger.info(f'Conf | use epoch {cfg["epoch"]}')
@@ -94,35 +94,35 @@ def run(cfg, logger):
             best.append(train_miou)
             torch.save(model.state_dict(), os.path.join(cfg['logdir'], 'best_train_miou.pth'))
 
-        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Train loss={train_loss :.5f}')
+        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Train loss={train_loss / len(train_loader):.5f}')
         logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train acc={train_acc :.5f}')
         logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Train miou={train_miou :.5f}')
 
-        net = model.eval()
-        eval_loss = 0
+        # net = model.eval()
+        # eval_loss = 0
 
-        for j, sample in enumerate(val_loader):
-            valImg = sample['image'].to(cfg['device'])
-            valLabel = sample['label'].to(cfg['device'])
+        # for j, sample in enumerate(val_loader):
+        #     valImg = sample['image'].to(cfg['device'])
+        #     valLabel = sample['label'].to(cfg['device'])
 
-            out = net(valImg)
-            loss = criterion(out, valLabel)
-            eval_loss = loss.item() + eval_loss
+        #     out = net(valImg)
+        #     loss = criterion(out, valLabel)
+        #     eval_loss = loss.item() + eval_loss
 
-            pre_label = out.max(dim=1)[1].data.cpu().numpy()
-            true_label = valLabel.data.cpu().numpy()
+        #     pre_label = out.max(dim=1)[1].data.cpu().numpy()
+        #     true_label = valLabel.data.cpu().numpy()
 
-            running_metrics_val.update(true_label, pre_label)
-        metrics = running_metrics_val.get_scores()
-        print('------------------eval------------------')
-        for k, v in metrics[0].items():
-            print(k, v)
-        eval_miou = metrics[0]['MIoU: ']
-        eval_acc = metrics[0]['PA: ']
+        #     running_metrics_val.update(true_label, pre_label)
+        # metrics = running_metrics_val.get_scores()
+        # print('------------------eval------------------')
+        # for k, v in metrics[0].items():
+        #     print(k, v)
+        # eval_miou = metrics[0]['MIoU: ']
+        # eval_acc = metrics[0]['PA: ']
 
-        logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Valid loss={eval_loss :.5f}')
-        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid acc={eval_acc :.5f}')
-        logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid miou={eval_miou :.5f}')
+        # logger.info(f'Iter | [{ep + 1:3d}/{cfg["epoch"]}] Valid loss={eval_loss :.5f}')
+        # logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid acc={eval_acc :.5f}')
+        # logger.info(f'Test | [{ep + 1:3d}/{cfg["epoch"]}] Valid miou={eval_miou :.5f}')
 
 
 if __name__ == '__main__':

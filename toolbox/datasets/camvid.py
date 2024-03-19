@@ -59,7 +59,7 @@ class CamVid(Dataset):
         self.num_class = num_class
 
         self.label_processor = LabelProcessor(file_path[2])
-        self.class_weight = class_weight.compute_weight(file_path[3], self.num_class)
+        # self.class_weight = class_weight.compute_weight(file_path[3], self.num_class)
 
     def __getitem__(self, index):
         img = self.imgs[index]
