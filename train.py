@@ -41,7 +41,7 @@ def run(cfg, logger):
     logger.info(f'Conf | use GPU {gpu_ids}')
     if len(gpu_ids) > 1:
         model = nn.DataParallel(model, device_ids=gpu_ids)
-    model = model.to(cfg["device"])
+    model = model.to(cfg['device'])
 
     # 优化器 & 学习率衰减
     logger.info(f'Conf | use optimizer Adam, lr={cfg["lr"]}, weight_decay={cfg["weight_decay"]}')
@@ -55,7 +55,7 @@ def run(cfg, logger):
     # 训练 & 验证
     logger.info(f'Conf | use epoch {cfg["epoch"]}')
 
-    running_metrics_val = runningScore(cfg["n_classes"])
+    running_metrics_val = runningScore(cfg['n_classes'])
 
     for ep in range(cfg['epoch']):
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
         "--config",
         nargs="?",
         type=str,
-        default="configs/camvid_bisenet.json",
+        default="configs/cityscapes_bisenet.json",
         help="Configuration file to use",
     )
 

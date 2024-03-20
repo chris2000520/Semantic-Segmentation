@@ -3,10 +3,7 @@ import sys
 import random
 from PIL import Image
 
-try:
-    import accimage
-except ImportError:
-    accimage = None
+
 import numbers
 import collections
 

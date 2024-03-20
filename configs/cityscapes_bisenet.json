@@ -1,6 +1,6 @@
 {
     "model_name": "bisenet",
-    "n_classes": 19,
+    "n_classes": 20,
 
     "dataset": "cityscapes",
     "image_h": 640,
@@ -17,8 +17,8 @@
     "lr_decay_gamma": 0.1,
     "weight_decay": 1e-3,
 
-    "batch_size": 4,
-    "num_workers": 4,
+    "batch_size": 1,
+    "num_workers": 1,
 
     "gpu_ids": "0"
 }
