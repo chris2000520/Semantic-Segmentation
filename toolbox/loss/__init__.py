@@ -1,5 +1,4 @@
 import torch.nn as nn
-from toolbox.loss.loss import DiceLoss
 
 
 def get_loss(cfg, weight=None):

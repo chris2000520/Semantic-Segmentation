@@ -1,16 +1,16 @@
 {
     "model_name": "bisenet",
-    "n_classes": 12,
+    "n_classes": 19,
 
-    "dataset": "camvid",
-    "image_h": 360,
-    "image_w": 480,
+    "dataset": "cityscapes",
+    "image_h": 640,
+    "image_w": 360,
     "augmentation": "True",
     "use_pt_norm": "True",
 
     "loss": "crossentropy_loss",
 
-    "epoch": 150,
+    "epoch": 2,
 
     "lr": 1e-4,
     "lr_decay_steps": 40,

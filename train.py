@@ -4,6 +4,7 @@ import shutil
 import json
 import time
 import torch
+import argparse
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
@@ -54,7 +55,7 @@ def run(cfg, logger):
     # 训练 & 验证
     logger.info(f'Conf | use epoch {cfg["epoch"]}')
 
-    running_metrics_val = runningScore(12)
+    running_metrics_val = runningScore(cfg["n_classes"])
 
     for ep in range(cfg['epoch']):
 
@@ -126,7 +127,6 @@ def run(cfg, logger):
 
 
 if __name__ == '__main__':
-    import argparse
 
     # 固定的代码
     parser = argparse.ArgumentParser(description="config")
