@@ -134,7 +134,7 @@ if __name__ == '__main__':
         "--config",
         nargs="?",
         type=str,
-        default="configs/cityscapes_bisenet.json",
+        default="configs/cityscapes_linknet.json",
         help="Configuration file to use",
     )
 
