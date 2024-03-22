@@ -30,11 +30,15 @@
 
 深度学习神经网络模型
 
-## predict
-
-模型预测，输出分割后的预测图和指标
 
 ## train
 
 模型训练
 
+## predict
+
+模型预测，输出分割后的预测图和指标
+
+## evaluate
+
+模型评估，包括**FPS**，**FLOPs**，**Parameters**
