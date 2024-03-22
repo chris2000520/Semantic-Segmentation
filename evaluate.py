@@ -1,10 +1,15 @@
 import time, torch
-from thop import profile
 from torchvision.models.resnet import resnet101
 from torchvision.models.resnet import resnet50
+from toolbox.models.enet import ENet
+from toolbox.models.fcn import FCN  
+from toolbox.models.bisenet import BiSeNet
+from toolbox.models.bisenetv1 import BiSeNetv1  
+from toolbox.models.bisenetv2 import BiSeNetv2
+from toolbox.models.dfanet import DFANet 
+from toolbox.models.segnet import SegNet 
 
-
-def test_model_speed(imgw=480, imgh=320, iterations=200):
+def test_model_speed(model, imgh, imgw, iterations=200):
     
     
     device = torch.device('cuda')
@@ -13,12 +18,11 @@ def test_model_speed(imgw=480, imgh=320, iterations=200):
     # 启用自动优化，二者同时开启效果最好
     # torch.backends.cudnn.benchmark = True
 
-    model = resnet50()
     model.eval()
     model.to(device)
     print('\n=========Speed Testing=========')
     # print(f'Model: {model}')
-    print(f'Size (W, H): {imgw}, {imgh}')
+    print(f'Size (H, W): {imgh}, {imgw}')
     
     input = torch.randn(1, 3, imgh, imgw).cuda()
     with torch.no_grad():
@@ -43,14 +47,27 @@ def test_model_speed(imgw=480, imgh=320, iterations=200):
     FPS = 1000 / latency
     print(f'FPS: {FPS}\n')
 
-def test_model_parameters(imgw=224, imgh=224):
+
+def cal_model_params(model, imgh, imgw):
     
-    model = resnet50()
-    input = torch.randn(4, 3, imgh, imgw)
-    flops, params = profile(model, inputs=(input,))
-    print('FLOPs = ' + str(flops/1000**3) + 'G')
-    print('Params = ' + str(params/1000**2) + 'M')
+    
+    with torch.cuda.device(0):
+        model = model
+        try:
+            from ptflops import get_model_complexity_info
+            model.eval()
+            macs, params = get_model_complexity_info(model, (3, imgh, imgw), as_strings=True, print_per_layer_stat=False, verbose=False)
+            print('{:<20} {:<8}'.format('MACs:', macs))
+            print('{:<20} {:<8}'.format('Parameters:', params))
+        except:
+            import numpy as np
+            params = np.sum([p.numel() for p in model.parameters()])
+            print(f'Number of parameters: {params / 1e6:.2f}M\n')
 
 
 if __name__ == '__main__':
-    test_model_parameters()
+    model = SegNet(12)
+    imgh = 1024
+    imgw = 2048
+    test_model_speed(model=model, imgh=imgh, imgw=imgw, iterations=100)
+    cal_model_params(model=model, imgh=imgh, imgw=imgw)

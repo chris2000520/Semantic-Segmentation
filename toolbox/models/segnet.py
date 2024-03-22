@@ -1,184 +1,80 @@
-# https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/models/segnet.py
+"""
+Paper:      SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation
+Url:        https://arxiv.org/abs/1511.00561
+Create by:  zh320
+Date:       2023/08/20
+"""
 
 import torch
 import torch.nn as nn
-import torchvision
+
+from .modules import ConvBNAct
 
 
-class conv2DBatchNormRelu(nn.Module):
-    def __init__(
-            self,
-            in_channels,
-            n_filters,
-            k_size,
-            stride,
-            padding,
-            bias=True,
-            dilation=1,
-            is_batchnorm=True,
-    ):
-        super(conv2DBatchNormRelu, self).__init__()
+class SegNet(nn.Module):
+    def __init__(self, num_class=1, n_channel=3, hid_channel=64, act_type='relu'):
+        super(SegNet, self).__init__()
+        self.down_stage1 = DownsampleBlock(n_channel, hid_channel, act_type, False)
+        self.down_stage2 = DownsampleBlock(hid_channel, hid_channel*2, act_type, False)
+        self.down_stage3 = DownsampleBlock(hid_channel*2, hid_channel*4, act_type, True)
+        self.down_stage4 = DownsampleBlock(hid_channel*4, hid_channel*8, act_type, True)
+        self.down_stage5 = DownsampleBlock(hid_channel*8, hid_channel*8, act_type, True)
+        self.up_stage5 = UpsampleBlock(hid_channel*8, hid_channel*8, act_type, True)
+        self.up_stage4 = UpsampleBlock(hid_channel*8, hid_channel*4, act_type, True)
+        self.up_stage3 = UpsampleBlock(hid_channel*4, hid_channel*2, act_type, True)
+        self.up_stage2 = UpsampleBlock(hid_channel*2, hid_channel, act_type, False)
+        self.up_stage1 = UpsampleBlock(hid_channel, hid_channel, act_type, False)
+        self.classifier = ConvBNAct(hid_channel, num_class, act_type=act_type)
 
-        conv_mod = nn.Conv2d(
-            int(in_channels),
-            int(n_filters),
-            kernel_size=k_size,
-            padding=padding,
-            stride=stride,
-            bias=bias,
-            dilation=dilation,
-        )
-
-        if is_batchnorm:
-            self.cbr_unit = nn.Sequential(
-                conv_mod, nn.BatchNorm2d(int(n_filters)), nn.ReLU(inplace=True)
-            )
-        else:
-            self.cbr_unit = nn.Sequential(conv_mod, nn.ReLU(inplace=True))
-
-    def forward(self, inputs):
-        outputs = self.cbr_unit(inputs)
-        return outputs
+    def forward(self, x):
+        x, indices1 = self.down_stage1(x)
+        x, indices2 = self.down_stage2(x)
+        x, indices3 = self.down_stage3(x)
+        x, indices4 = self.down_stage4(x)
+        x, indices5 = self.down_stage5(x)
+        x = self.up_stage5(x, indices5)
+        x = self.up_stage4(x, indices4)
+        x = self.up_stage3(x, indices3)
+        x = self.up_stage2(x, indices2)
+        x = self.up_stage1(x, indices1)
+        x = self.classifier(x)
+        
+        return x
 
 
-class segnetDown2(nn.Module):
-    def __init__(self, in_size, out_size):
-        super(segnetDown2, self).__init__()
-        self.conv1 = conv2DBatchNormRelu(in_size, out_size, 3, 1, 1)
-        self.conv2 = conv2DBatchNormRelu(out_size, out_size, 3, 1, 1)
-        self.maxpool_with_argmax = nn.MaxPool2d(2, 2, return_indices=True)
+class DownsampleBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, act_type='relu', extra_conv=False):
+        super(DownsampleBlock, self).__init__()
+        layers = [ConvBNAct(in_channels, out_channels, 3, act_type=act_type, inplace=True),
+                  ConvBNAct(out_channels, out_channels, 3, act_type=act_type, inplace=True)]
+        if extra_conv:
+            layers.append(ConvBNAct(out_channels, out_channels, 3, act_type=act_type, inplace=True))
+        self.conv = nn.Sequential(*layers)
+        
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True)
 
-    def forward(self, inputs):
-        outputs = self.conv1(inputs)
-        outputs = self.conv2(outputs)
-        unpooled_shape = outputs.size()
-        outputs, indices = self.maxpool_with_argmax(outputs)
-        return outputs, indices, unpooled_shape
-
-
-class segnetDown3(nn.Module):
-    def __init__(self, in_size, out_size):
-        super(segnetDown3, self).__init__()
-        self.conv1 = conv2DBatchNormRelu(in_size, out_size, 3, 1, 1)
-        self.conv2 = conv2DBatchNormRelu(out_size, out_size, 3, 1, 1)
-        self.conv3 = conv2DBatchNormRelu(out_size, out_size, 3, 1, 1)
-        self.maxpool_with_argmax = nn.MaxPool2d(2, 2, return_indices=True)
-
-    def forward(self, inputs):
-        outputs = self.conv1(inputs)
-        outputs = self.conv2(outputs)
-        outputs = self.conv3(outputs)
-        unpooled_shape = outputs.size()
-        outputs, indices = self.maxpool_with_argmax(outputs)
-        return outputs, indices, unpooled_shape
+    def forward(self, x):
+        x = self.conv(x)
+        x, indices = self.pool(x)
+        return x, indices
 
 
-class segnetUp2(nn.Module):
-    def __init__(self, in_size, out_size):
-        super(segnetUp2, self).__init__()
-        self.unpool = nn.MaxUnpool2d(2, 2)
-        self.conv1 = conv2DBatchNormRelu(in_size, in_size, 3, 1, 1)
-        self.conv2 = conv2DBatchNormRelu(in_size, out_size, 3, 1, 1)
+class UpsampleBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, act_type='relu', extra_conv=False):
+        super(UpsampleBlock, self).__init__()
+        self.pool = nn.MaxUnpool2d(kernel_size=2, stride=2)
+        
+        hid_channel = in_channels if extra_conv else out_channels
+        
+        layers = [ConvBNAct(in_channels, in_channels, 3, act_type=act_type, inplace=True),
+                  ConvBNAct(in_channels, hid_channel, 3, act_type=act_type, inplace=True)]
+                  
+        if extra_conv:
+            layers.append(ConvBNAct(in_channels, out_channels, 3, act_type=act_type, inplace=True))
+        self.conv = nn.Sequential(*layers)
 
-    def forward(self, inputs, indices, output_shape):
-        outputs = self.unpool(input=inputs, indices=indices, output_size=output_shape)
-        outputs = self.conv1(outputs)
-        outputs = self.conv2(outputs)
-        return outputs
-
-
-class segnetUp3(nn.Module):
-    def __init__(self, in_size, out_size):
-        super(segnetUp3, self).__init__()
-        self.unpool = nn.MaxUnpool2d(2, 2)
-        self.conv1 = conv2DBatchNormRelu(in_size, in_size, 3, 1, 1)
-        self.conv2 = conv2DBatchNormRelu(in_size, in_size, 3, 1, 1)
-        self.conv3 = conv2DBatchNormRelu(in_size, out_size, 3, 1, 1)
-
-    def forward(self, inputs, indices, output_shape):
-        outputs = self.unpool(input=inputs, indices=indices, output_size=output_shape)
-        outputs = self.conv1(outputs)
-        outputs = self.conv2(outputs)
-        outputs = self.conv3(outputs)
-        return outputs
-
-
-class segnet(nn.Module):
-    def __init__(self, n_classes=21, in_channels=3, is_unpooling=True, pretrained_vgg16=True):
-        super(segnet, self).__init__()
-
-        self.in_channels = in_channels
-        self.is_unpooling = is_unpooling
-
-        self.down1 = segnetDown2(self.in_channels, 64)
-        self.down2 = segnetDown2(64, 128)
-        self.down3 = segnetDown3(128, 256)
-        self.down4 = segnetDown3(256, 512)
-        self.down5 = segnetDown3(512, 512)
-
-        self.up5 = segnetUp3(512, 512)
-        self.up4 = segnetUp3(512, 256)
-        self.up3 = segnetUp3(256, 128)
-        self.up2 = segnetUp2(128, 64)
-        self.up1 = segnetUp2(64, n_classes)
-
-        if pretrained_vgg16:
-            vgg16_bn = torchvision.models.vgg16_bn(pretrained=True)
-            self.init_vgg16_params(vgg16_bn)
-
-    def forward(self, inputs):
-
-        down1, indices_1, unpool_shape1 = self.down1(inputs)
-        down2, indices_2, unpool_shape2 = self.down2(down1)
-        down3, indices_3, unpool_shape3 = self.down3(down2)
-        down4, indices_4, unpool_shape4 = self.down4(down3)
-        down5, indices_5, unpool_shape5 = self.down5(down4)
-
-        up5 = self.up5(down5, indices_5, unpool_shape5)
-        up4 = self.up4(up5, indices_4, unpool_shape4)
-        up3 = self.up3(up4, indices_3, unpool_shape3)
-        up2 = self.up2(up3, indices_2, unpool_shape2)
-        up1 = self.up1(up2, indices_1, unpool_shape1)
-
-        return up1
-
-    def init_vgg16_params(self, vgg16):
-        blocks = [self.down1, self.down2, self.down3, self.down4, self.down5]
-
-        features = list(vgg16.features.children())
-
-        vgg_layers = []
-        for _layer in features:
-            if isinstance(_layer, nn.Conv2d):
-                vgg_layers.append(_layer)
-
-        merged_layers = []
-        for idx, conv_block in enumerate(blocks):
-            if idx < 2:
-                units = [conv_block.conv1.cbr_unit, conv_block.conv2.cbr_unit]
-            else:
-                units = [
-                    conv_block.conv1.cbr_unit,
-                    conv_block.conv2.cbr_unit,
-                    conv_block.conv3.cbr_unit,
-                ]
-            for _unit in units:
-                for _layer in _unit:
-                    if isinstance(_layer, nn.Conv2d):
-                        merged_layers.append(_layer)
-
-        assert len(vgg_layers) == len(merged_layers)
-
-        for l1, l2 in zip(vgg_layers, merged_layers):
-            if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Conv2d):
-                assert l1.weight.size() == l2.weight.size()
-                assert l1.bias.size() == l2.bias.size()
-                l2.weight.data = l1.weight.data
-                l2.bias.data = l1.bias.data
-
-
-if __name__ == '__main__':
-    inputs = torch.randn((4, 3, 360, 480)).cuda()
-    model = segnet(n_classes=12).cuda()
-    out = model(inputs)
-    print(out.size())
+    def forward(self, x, indices):
+        x = self.pool(x, indices)
+        x = self.conv(x)
+        
+        return x
